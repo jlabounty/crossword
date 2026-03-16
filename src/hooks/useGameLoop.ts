@@ -29,6 +29,7 @@ export function useGameLoop() {
     if (inFlight.current) return;
 
     inFlight.current = true;
+    let cancelled = false;
 
     const isFirstMove = turnNumber === 1;
     // Detect first move: board has no committed tiles
@@ -45,6 +46,7 @@ export function useGameLoop() {
       )
       .then(move => {
         inFlight.current = false;
+        if (cancelled) return;
         if (move && move.placements.length > 0) {
           applyBotMove(move.placements, move.score, move.wordsFormed);
         } else {
@@ -53,7 +55,9 @@ export function useGameLoop() {
       })
       .catch(() => {
         inFlight.current = false;
-        passTurn();
+        if (!cancelled) passTurn();
       });
+
+    return () => { cancelled = true; };
   }, [phase, turnPhase, currentPlayerIndex, turnNumber]); // eslint-disable-line react-hooks/exhaustive-deps
 }

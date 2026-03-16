@@ -63,6 +63,10 @@ function generateRandomBonusMap(rows: number, cols: number, seed: number): Bonus
 const FIXED_LAYOUT_SEED = 0xdeadbeef;
 
 export function createBoard(rows: number, cols: number, seed: number, randomBonuses = false): Board {
+  if (!Number.isInteger(rows) || !Number.isInteger(cols) ||
+      rows < 5 || rows > 40 || cols < 5 || cols > 40) {
+    throw new RangeError(`Invalid board dimensions: ${rows}×${cols}`);
+  }
   let bonusMap: BonusType[][];
 
   if (!randomBonuses && rows === 15 && cols === 15) {

@@ -113,8 +113,8 @@ export function MenuScreen() {
                   min={MIN_DIM}
                   max={MAX_DIM}
                   value={customRows}
-                  onChange={e => setCustomRows(Number(e.target.value))}
-                  onBlur={e => setCustomRows(clampDim(Number(e.target.value)))}
+                  onChange={e => { const n = parseInt(e.target.value, 10); if (!isNaN(n)) setCustomRows(n); }}
+                  onBlur={e => setCustomRows(clampDim(parseInt(e.target.value, 10)))}
                   className="w-full bg-white/10 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
@@ -126,8 +126,8 @@ export function MenuScreen() {
                   min={MIN_DIM}
                   max={MAX_DIM}
                   value={customCols}
-                  onChange={e => setCustomCols(Number(e.target.value))}
-                  onBlur={e => setCustomCols(clampDim(Number(e.target.value)))}
+                  onChange={e => { const n = parseInt(e.target.value, 10); if (!isNaN(n)) setCustomCols(n); }}
+                  onBlur={e => setCustomCols(clampDim(parseInt(e.target.value, 10)))}
                   className="w-full bg-white/10 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
@@ -181,6 +181,7 @@ export function MenuScreen() {
               <input
                 className="flex-1 bg-white/10 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 value={players[i].name}
+                maxLength={40}
                 onChange={e => updatePlayer(i, { name: e.target.value })}
                 placeholder={`Player ${i + 1}`}
               />
