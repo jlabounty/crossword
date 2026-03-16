@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #1b4332;
+  color: #f0f0f0;
+  font-family: system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Touch action: prevent page scroll while dragging tiles */
+.tile-dragging { touch-action: none; }
