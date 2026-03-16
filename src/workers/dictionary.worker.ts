@@ -299,20 +299,29 @@ function leftPart(
 
   if (limit === 0) return;
 
-  // Extend the left part one more step to the left
-  for (const [letter, _] of node.c) {
+  // Extend the left part one more step to the left.
+  // Iterate all 26 letters and check whether prepending each letter still forms
+  // a valid trie prefix (letter + partial).  Using node.c here was wrong because
+  // node is the forward node for `partial`, not the root-relative prefix node for
+  // the new left part — so many valid prefixes (e.g. "QU") were silently skipped.
+  const col = anchorC - len - 1;
+  const cc  = crossChecks[r]?.[col] ?? null; // cross-check for this left-part cell
+  for (let i = 0; i < 26; i++) {
+    const letter = String.fromCharCode(65 + i) as Tile['letter'];
+    // Apply cross-check: if a perpendicular word is formed at this cell, the
+    // letter must be in the allowed set.
+    if (cc !== null && !cc.has(letter)) continue;
+    const newPartial = letter + partial; // prepend — left part grows leftward
+    const newNode = trieGetNode(trie!, newPartial);
+    if (!newNode) continue;
+
     // Try regular tile
     const tileIdx = rack.tiles.findIndex(t => !t.isBlank && t.letter === letter);
     if (tileIdx !== -1) {
       const [tile] = rack.tiles.splice(tileIdx, 1);
-      const newPartial = letter + partial; // prepend (left part grows leftward)
-      const newNode = trieGetNode(trie!, newPartial); // restart from root
-      if (newNode) {
-        const col = anchorC - len - 1;
-        rawPlacements.unshift({ r, c: col, tile });
-        leftPart(newPartial, r, anchorC, len + 1, limit - 1, newNode, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
-        rawPlacements.shift();
-      }
+      rawPlacements.unshift({ r, c: col, tile });
+      leftPart(newPartial, r, anchorC, len + 1, limit - 1, newNode, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+      rawPlacements.shift();
       rack.tiles.splice(tileIdx, 0, tile);
     }
 
@@ -320,15 +329,10 @@ function leftPart(
     const blankIdx = rack.tiles.findIndex(t => t.isBlank);
     if (blankIdx !== -1) {
       const [blank] = rack.tiles.splice(blankIdx, 1);
-      const usedBlank: Tile = { ...blank, playedAs: letter as Tile['letter'] };
-      const newPartial = letter + partial;
-      const newNode = trieGetNode(trie!, newPartial);
-      if (newNode) {
-        const col = anchorC - len - 1;
-        rawPlacements.unshift({ r, c: col, tile: usedBlank });
-        leftPart(newPartial, r, anchorC, len + 1, limit - 1, newNode, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
-        rawPlacements.shift();
-      }
+      const usedBlank: Tile = { ...blank, playedAs: letter };
+      rawPlacements.unshift({ r, c: col, tile: usedBlank });
+      leftPart(newPartial, r, anchorC, len + 1, limit - 1, newNode, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+      rawPlacements.shift();
       rack.tiles.splice(blankIdx, 0, blank);
     }
   }
@@ -420,10 +424,11 @@ function findBestMove(
 
   switch (difficulty) {
     case 'easy': {
-      // Random move from bottom 50%, capped at score ≤ 20
+      // Random move from bottom 50%, capped at score ≤ 20; fall back to lowest if none qualify
       const pool = moves.filter(m => m.score <= 20);
-      if (pool.length === 0) return null; // pass if only high-scoring moves exist
-      return pool[Math.floor(Math.random() * pool.length)];
+      return pool.length > 0
+        ? pool[Math.floor(Math.random() * pool.length)]
+        : moves[moves.length - 1]; // moves sorted desc, so last = lowest-scoring
     }
     case 'medium': {
       // Weighted random from all moves (higher score = higher weight, but not always best)
