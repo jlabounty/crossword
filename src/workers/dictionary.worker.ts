@@ -54,27 +54,13 @@ function trieGetNode(root: TrieNode, prefix: string): TrieNode | null {
 let trie: TrieNode | null = null;
 let dictReady = false;
 
-async function loadDictionary() {
-  try {
-    // import.meta.env.BASE_URL is replaced at build time by Vite (e.g. '/crossword/')
-    // so this resolves correctly under any deployment base path.
-    const dictUrl = `${import.meta.env.BASE_URL}dict/enable1.txt`;
-    const resp = await fetch(dictUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const text = await resp.text();
-    trie = makeNode();
-    for (const line of text.split('\n')) {
-      const w = line.trim();
-      if (w.length >= 2) trieInsert(trie, w);
-    }
-    dictReady = true;
-    self.postMessage({ type: 'READY' });
-  } catch (e) {
-    // Fall back to accept-all mode
-    trie = null;
-    dictReady = true;
-    self.postMessage({ type: 'READY', fallback: true });
+function buildTrieFromText(text: string) {
+  trie = makeNode();
+  for (const line of text.split('\n')) {
+    const w = line.trim();
+    if (w.length >= 2) trieInsert(trie, w);
   }
+  dictReady = true;
 }
 
 // ─── Cross-check computation ─────────────────────────────────────────────────
@@ -457,6 +443,7 @@ function findBestMove(
 
 // ─── Message handler ──────────────────────────────────────────────────────────
 
+interface InitMsg { type: 'INIT'; text: string }
 interface ValidateMsg { type: 'VALIDATE'; id: number; words: string[] }
 interface FindMovesMsg {
   type: 'FIND_MOVES';
@@ -469,16 +456,18 @@ interface FindMovesMsg {
   isFirstMove: boolean;
 }
 
-self.onmessage = (e: MessageEvent<ValidateMsg | FindMovesMsg>) => {
+self.onmessage = (e: MessageEvent<InitMsg | ValidateMsg | FindMovesMsg>) => {
   const msg = e.data;
 
+  if (msg.type === 'INIT') {
+    // Word list text fetched on main thread and posted here to build the Trie.
+    buildTrieFromText(msg.text);
+    self.postMessage({ type: 'READY' });
+    return;
+  }
+
   if (msg.type === 'VALIDATE') {
-    if (!dictReady) {
-      self.postMessage({ type: 'VALIDATE_RESULT', id: msg.id, valid: true, invalidWords: [] });
-      return;
-    }
-    if (!trie) {
-      // Fallback: accept all
+    if (!dictReady || !trie) {
       self.postMessage({ type: 'VALIDATE_RESULT', id: msg.id, valid: true, invalidWords: [] });
       return;
     }
@@ -493,7 +482,6 @@ self.onmessage = (e: MessageEvent<ValidateMsg | FindMovesMsg>) => {
   }
 
   if (msg.type === 'FIND_MOVES') {
-    // Add a small random delay for UX (bot "thinking")
     const delay = msg.difficulty === 'easy' ? 800 : msg.difficulty === 'medium' ? 1200 : 500;
     setTimeout(() => {
       const move = findBestMove(
@@ -509,6 +497,3 @@ self.onmessage = (e: MessageEvent<ValidateMsg | FindMovesMsg>) => {
     return;
   }
 };
-
-// Load dictionary immediately on worker startup
-loadDictionary();

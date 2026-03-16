@@ -1,6 +1,8 @@
 /**
- * DictionaryService — wraps the dictionary Web Worker with a promise API.
- * Falls back to accept-all if the worker is unavailable.
+ * DictionaryService — fetches the word list on the main thread then hands it
+ * to the Web Worker to build the Trie.  Fetching here (rather than inside the
+ * worker) makes the network request visible in browser DevTools and avoids
+ * any worker-context URL-resolution quirks.
  */
 
 import type { Board, Tile, BotDifficulty } from '@/types';
@@ -25,7 +27,7 @@ class DictionaryService {
     this.init();
   }
 
-  private init() {
+  private async init() {
     try {
       this.worker = new Worker(
         new URL('../workers/dictionary.worker.ts', import.meta.url),
@@ -45,11 +47,22 @@ class DictionaryService {
           handler.resolve(msg);
         }
       };
-      this.worker.onerror = () => {
+      this.worker.onerror = (e) => {
+        console.error('[DictionaryService] Worker error:', e);
         this.isFallback = true;
         this.resolveReady();
       };
-    } catch {
+
+      // Fetch the word list here on the main thread so it appears in DevTools
+      // Network tab and we get clear error messages if it 404s.
+      const dictUrl = `${import.meta.env.BASE_URL}dict/enable1.txt`;
+      const resp = await fetch(dictUrl);
+      if (!resp.ok) throw new Error(`Failed to fetch dict: HTTP ${resp.status} ${dictUrl}`);
+      const text = await resp.text();
+      // Hand the raw text to the worker — it will build the Trie there.
+      this.worker.postMessage({ type: 'INIT', text });
+    } catch (err) {
+      console.error('[DictionaryService] Init failed, falling back to accept-all:', err);
       this.isFallback = true;
       this.resolveReady();
     }
