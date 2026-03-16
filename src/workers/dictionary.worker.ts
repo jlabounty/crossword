@@ -56,7 +56,10 @@ let dictReady = false;
 
 async function loadDictionary() {
   try {
-    const resp = await fetch('/dict/enable1.txt');
+    // Use import.meta.url so the path resolves correctly under any base URL
+    // (e.g. /crossword/dict/enable1.txt on GitHub Pages)
+    const dictUrl = new URL('../dict/enable1.txt', import.meta.url).href;
+    const resp = await fetch(dictUrl);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();
     trie = makeNode();
