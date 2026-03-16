@@ -2,7 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const base = '/crossword/';
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -12,7 +15,8 @@ export default defineConfig({
         name: 'Word Board',
         short_name: 'WordBoard',
         description: 'Offline-capable word placement game for 1–4 players',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         orientation: 'any',
         background_color: '#1b4332',
