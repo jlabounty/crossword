@@ -56,9 +56,9 @@ let dictReady = false;
 
 async function loadDictionary() {
   try {
-    // Use import.meta.url so the path resolves correctly under any base URL
-    // (e.g. /crossword/dict/enable1.txt on GitHub Pages)
-    const dictUrl = new URL('../dict/enable1.txt', import.meta.url).href;
+    // import.meta.env.BASE_URL is replaced at build time by Vite (e.g. '/crossword/')
+    // so this resolves correctly under any deployment base path.
+    const dictUrl = `${import.meta.env.BASE_URL}dict/enable1.txt`;
     const resp = await fetch(dictUrl);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();

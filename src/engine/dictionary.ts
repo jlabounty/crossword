@@ -29,7 +29,7 @@ class DictionaryService {
     try {
       this.worker = new Worker(
         new URL('../workers/dictionary.worker.ts', import.meta.url),
-        { type: 'module' }
+        { type: 'classic' }
       );
       this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
         const msg = e.data;
