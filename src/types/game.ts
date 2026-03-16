@@ -37,6 +37,7 @@ export interface GameConfig {
   bingoBonus: number;
   difficulty: BotDifficulty;
   boardSeed: number;
+  randomBonuses: boolean;
 }
 
 export interface GameState {

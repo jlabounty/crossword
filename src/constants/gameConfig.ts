@@ -7,4 +7,5 @@ export const DEFAULT_CONFIG: GameConfig = {
   bingoBonus: 50,
   difficulty: 'medium',
   boardSeed: Math.floor(Math.random() * 0xffffffff),
+  randomBonuses: false,
 };

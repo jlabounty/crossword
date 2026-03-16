@@ -15,7 +15,7 @@ function makeInitialState(): GameState {
   return {
     phase: 'setup',
     turnPhase: 'placing',
-    board: createBoard(DEFAULT_CONFIG.rows, DEFAULT_CONFIG.cols, DEFAULT_CONFIG.boardSeed),
+    board: createBoard(DEFAULT_CONFIG.rows, DEFAULT_CONFIG.cols, DEFAULT_CONFIG.boardSeed, DEFAULT_CONFIG.randomBonuses),
     players: [],
     currentPlayerIndex: 0,
     tileBag: [],
@@ -59,7 +59,7 @@ export const useGameStore = create<GameState & GameActions>()(
       startGame(config, playerDefs) {
         const seed = config.boardSeed ?? Math.floor(Math.random() * 0xffffffff);
         const newConfig = { ...config, boardSeed: seed };
-        const board = createBoard(config.rows, config.cols, seed);
+        const board = createBoard(config.rows, config.cols, seed, config.randomBonuses ?? false);
         let bag = initBag(seed);
 
         const players: Player[] = playerDefs.map(def => {

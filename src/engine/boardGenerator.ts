@@ -58,11 +58,17 @@ function generateRandomBonusMap(rows: number, cols: number, seed: number): Bonus
   return map;
 }
 
-export function createBoard(rows: number, cols: number, seed: number): Board {
+// Fixed seed used when randomBonuses=false for non-15×15 sizes — gives a
+// consistent "house" layout for that dimension every game.
+const FIXED_LAYOUT_SEED = 0xdeadbeef;
+
+export function createBoard(rows: number, cols: number, seed: number, randomBonuses = false): Board {
   let bonusMap: BonusType[][];
 
-  if (rows === 15 && cols === 15) {
+  if (!randomBonuses && rows === 15 && cols === 15) {
     bonusMap = STANDARD_15x15;
+  } else if (!randomBonuses) {
+    bonusMap = generateRandomBonusMap(rows, cols, FIXED_LAYOUT_SEED);
   } else {
     bonusMap = generateRandomBonusMap(rows, cols, seed);
   }

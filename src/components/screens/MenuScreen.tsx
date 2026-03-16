@@ -4,6 +4,11 @@ import { BOARD_PRESETS } from '@/constants/boardLayouts';
 import { DEFAULT_CONFIG } from '@/constants/gameConfig';
 import type { GameConfig, BotDifficulty, PlayerType } from '@/types';
 
+const CUSTOM_PRESET_IDX = BOARD_PRESETS.length; // sentinel index for "Custom"
+
+const MIN_DIM = 5;
+const MAX_DIM = 40;
+
 interface PlayerSetup {
   id: string;
   name: string;
@@ -16,6 +21,9 @@ export function MenuScreen() {
 
   const [playerCount, setPlayerCount] = useState(2);
   const [preset, setPreset] = useState(0);
+  const [customRows, setCustomRows] = useState(15);
+  const [customCols, setCustomCols] = useState(15);
+  const [randomBonuses, setRandomBonuses] = useState(false);
   const [players, setPlayers] = useState<PlayerSetup[]>([
     { id: '1', name: 'Player 1', type: 'human', difficulty: null },
     { id: '2', name: 'Player 2', type: 'human', difficulty: null },
@@ -23,16 +31,22 @@ export function MenuScreen() {
     { id: '4', name: 'Player 4', type: 'human', difficulty: null },
   ]);
 
+  const isCustom = preset === CUSTOM_PRESET_IDX;
+
   const updatePlayer = (i: number, update: Partial<PlayerSetup>) => {
     setPlayers(prev => prev.map((p, idx) => idx === i ? { ...p, ...update } : p));
   };
 
+  const clampDim = (v: number) => Math.max(MIN_DIM, Math.min(MAX_DIM, v || MIN_DIM));
+
   const handleStart = () => {
-    const { rows, cols } = BOARD_PRESETS[preset];
+    const rows = isCustom ? clampDim(customRows) : BOARD_PRESETS[preset].rows;
+    const cols = isCustom ? clampDim(customCols) : BOARD_PRESETS[preset].cols;
     const config: GameConfig = {
       ...DEFAULT_CONFIG,
       rows,
       cols,
+      randomBonuses,
       boardSeed: Math.floor(Math.random() * 0xffffffff),
     };
     startGame(config, players.slice(0, playerCount).map(p => ({
@@ -54,7 +68,7 @@ export function MenuScreen() {
         {/* Board size */}
         <div>
           <label className="text-white/80 text-sm font-semibold block mb-2">Board Size</label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {BOARD_PRESETS.map((p, i) => (
               <button
                 key={i}
@@ -65,6 +79,66 @@ export function MenuScreen() {
                 {p.label}
               </button>
             ))}
+            <button
+              onClick={() => setPreset(CUSTOM_PRESET_IDX)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
+                ${isCustom ? 'bg-green-600 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+            >
+              Custom
+            </button>
+          </div>
+
+          {/* Custom dimension inputs */}
+          {isCustom && (
+            <div className="flex items-center gap-3 mt-3">
+              <div className="flex-1">
+                <label className="text-white/60 text-xs block mb-1">Rows ({MIN_DIM}–{MAX_DIM})</label>
+                <input
+                  type="number"
+                  min={MIN_DIM}
+                  max={MAX_DIM}
+                  value={customRows}
+                  onChange={e => setCustomRows(Number(e.target.value))}
+                  onBlur={e => setCustomRows(clampDim(Number(e.target.value)))}
+                  className="w-full bg-white/10 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <span className="text-white/60 text-lg mt-4">×</span>
+              <div className="flex-1">
+                <label className="text-white/60 text-xs block mb-1">Cols ({MIN_DIM}–{MAX_DIM})</label>
+                <input
+                  type="number"
+                  min={MIN_DIM}
+                  max={MAX_DIM}
+                  value={customCols}
+                  onChange={e => setCustomCols(Number(e.target.value))}
+                  onBlur={e => setCustomCols(clampDim(Number(e.target.value)))}
+                  className="w-full bg-white/10 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Random bonuses toggle */}
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <span className="text-white/80 text-sm font-medium">Random Bonuses</span>
+              {!isCustom && preset === 0 && !randomBonuses && (
+                <span className="text-white/40 text-xs ml-2">Classic Scrabble layout</span>
+              )}
+            </div>
+            <button
+              onClick={() => setRandomBonuses(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${randomBonuses ? 'bg-green-600' : 'bg-white/20'}`}
+              role="switch"
+              aria-checked={randomBonuses}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                  ${randomBonuses ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
           </div>
         </div>
 
