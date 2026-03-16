@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
 import { v4 as uuid } from 'uuid';
-import type { GameState, GameConfig, Player, Position, Tile } from '@/types';
+import type { GameState, GameConfig, Player, Position, Tile, PendingPlacement } from '@/types';
 import { DEFAULT_CONFIG } from '@/constants/gameConfig';
 import { createBoard } from '@/engine/boardGenerator';
 import { initBag, drawTiles, swapTiles } from '@/engine/tileBag';
@@ -46,6 +46,9 @@ interface GameActions {
 
   // Blank tile
   assignBlank: (tileId: string, letter: Tile['playedAs']) => void;
+
+  // Bot
+  applyBotMove: (placements: PendingPlacement[], score: number, wordsFormed: string[]) => void;
 }
 
 export const useGameStore = create<GameState & GameActions>()(
@@ -276,6 +279,55 @@ export const useGameStore = create<GameState & GameActions>()(
                 cell.pendingTile.playedAs = letter;
               }
             }
+          }
+        });
+      },
+
+      applyBotMove(placements: PendingPlacement[], score: number, wordsFormed: string[]) {
+        set(state => {
+          const player = state.players[state.currentPlayerIndex];
+
+          // Commit tiles directly (bot moves are pre-validated)
+          for (const { tile, position } of placements) {
+            const cell = state.board[position.row][position.col];
+            cell.tile = tile;
+            cell.pendingTile = null;
+            cell.bonusConsumed = true;
+            // Remove from rack
+            const idx = player.rack.findIndex(t => t.id === tile.id);
+            if (idx !== -1) player.rack.splice(idx, 1);
+          }
+
+          player.score += score;
+          player.consecutiveScorelessTurns = score > 0 ? 0 : player.consecutiveScorelessTurns + 1;
+
+          // Draw tiles
+          const needed = state.config.rackSize - player.rack.length;
+          if (needed > 0) {
+            const { drawn, remaining } = drawTiles(state.tileBag, needed);
+            player.rack.push(...drawn);
+            state.tileBag = remaining;
+          }
+
+          state.lastMove = {
+            playerId: player.id,
+            placements,
+            wordsFormed,
+            score,
+          };
+          state.pendingPlacements = [];
+          state.consecutiveScorelessTurns = score > 0 ? 0 : state.consecutiveScorelessTurns + 1;
+
+          const bagEmpty = state.tileBag.length === 0;
+          const playerEmptiedRack = player.rack.length === 0;
+          const maxScoreless = 2 * state.players.length;
+
+          if ((bagEmpty && playerEmptiedRack) || state.consecutiveScorelessTurns >= maxScoreless) {
+            state.phase = 'gameOver';
+            finalizeScores(state);
+          } else {
+            state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+            state.turnNumber += 1;
           }
         });
       },

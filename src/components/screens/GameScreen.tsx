@@ -5,8 +5,10 @@ import { Scoreboard } from '../Scoreboard/Scoreboard';
 import { ActionBar } from '../Controls/ActionBar';
 import { BlankTileModal } from '../shared/BlankTileModal';
 import { useGameStore, useUIStore } from '@/store/gameStore';
+import { useGameLoop } from '@/hooks/useGameLoop';
 
 export function GameScreen() {
+  useGameLoop(); // Triggers bot turns automatically
   const resetToSetup = useGameStore(s => s.resetToSetup);
   const error = useUIStore(s => s.error);
   const setError = useUIStore(s => s.setError);

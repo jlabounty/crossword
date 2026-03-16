@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useGameStore, useUIStore } from '@/store/gameStore';
 
 export function ActionBar() {
+  const players = useGameStore(s => s.players);
+  const currentPlayerIndex = useGameStore(s => s.currentPlayerIndex);
+  const currentPlayer = players[currentPlayerIndex];
+  const isBotTurn = currentPlayer?.type === 'bot';
   const playTurn = useGameStore(s => s.playTurn);
   const passTurn = useGameStore(s => s.passTurn);
   const recallAll = useGameStore(s => s.recallAll);
@@ -27,6 +31,15 @@ export function ActionBar() {
     await playTurn();
     setIsSubmitting(false);
   };
+
+  if (isBotTurn) {
+    return (
+      <div className="flex items-center gap-2 text-white/70 text-sm animate-pulse">
+        <span>🤖</span>
+        <span>{currentPlayer.name} is thinking…</span>
+      </div>
+    );
+  }
 
   if (showSwapModal) {
     return (

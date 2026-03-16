@@ -27,24 +27,19 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Cache DAWG binary
+      - name: Cache word list
         uses: actions/cache@v4
+        id: dict-cache
         with:
-          path: public/dict/enable1.dawg
-          key: dawg-${{ hashFiles('scripts/words/enable1.txt') }}
-          restore-keys: dawg-
+          path: public/dict/enable1.txt
+          key: enable1-wordlist-v1
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build dictionary (if not cached)
-        run: |
-          if [ ! -f public/dict/enable1.dawg ]; then
-            echo "Building DAWG dictionary..."
-            npm run build:dict 2>/dev/null || echo "No build:dict script yet, skipping"
-          else
-            echo "Using cached DAWG"
-          fi
+      - name: Download word list (if not cached)
+        if: steps.dict-cache.outputs.cache-hit != 'true'
+        run: npm run build:dict
 
       - name: Build app
         run: npm run build

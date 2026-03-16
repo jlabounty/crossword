@@ -1,25 +1,44 @@
 /**
- * Phase 2 script: compile a word list text file into a DAWG binary.
+ * Downloads the ENABLE1 public-domain word list and writes a processed copy
+ * to public/dict/enable1.txt (one uppercase word per line, 2+ letters, sorted).
  *
- * Usage:
- *   1. Place enable1.txt (one word per line) at scripts/words/enable1.txt
- *   2. Run: npm run build:dict
- *   3. Output: public/dict/enable1.dawg
- *
- * TODO (Phase 2): implement DAWG construction and binary serialization.
+ * Usage:  npm run build:dict
  */
 
-import { existsSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-const wordListPath = join(process.cwd(), 'scripts', 'words', 'enable1.txt');
-const outputPath = join(process.cwd(), 'public', 'dict', 'enable1.dawg');
+const WORD_LIST_URL =
+  'https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt';
+const OUTPUT_DIR = join(process.cwd(), 'public', 'dict');
+const OUTPUT_PATH = join(OUTPUT_DIR, 'enable1.txt');
 
-if (!existsSync(wordListPath)) {
-  console.log(`Word list not found at ${wordListPath}`);
-  console.log('Download enable1.txt from https://github.com/dolph/dictionary and place it there.');
-  process.exit(0);
+async function run() {
+  console.log(`Downloading ENABLE1 word list from ${WORD_LIST_URL}...`);
+
+  const resp = await fetch(WORD_LIST_URL);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+  const text = await resp.text();
+
+  const words = [
+    ...new Set(
+      text
+        .split('\n')
+        .map(w => w.trim().toUpperCase())
+        .filter(w => w.length >= 2 && /^[A-Z]+$/.test(w))
+    ),
+  ].sort();
+
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+  writeFileSync(OUTPUT_PATH, words.join('\n'), 'utf8');
+  console.log(`✓ Wrote ${words.length} words → ${OUTPUT_PATH}`);
 }
 
-console.log(`Building DAWG from ${wordListPath} → ${outputPath}`);
-console.log('TODO: DAWG compilation not yet implemented (Phase 2)');
+if (!existsSync(OUTPUT_PATH)) {
+  run().catch(err => {
+    console.error('Failed to build dictionary:', err.message);
+    process.exit(1);
+  });
+} else {
+  console.log(`Dictionary already exists at ${OUTPUT_PATH} (delete to re-download)`);
+}

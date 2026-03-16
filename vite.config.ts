@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['icons/*.png', 'dict/*.dawg'],
+      includeAssets: ['icons/*.png', 'dict/*.txt'],
       manifest: {
         name: 'Word Board',
         short_name: 'WordBoard',
@@ -24,7 +24,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}', 'dict/*.dawg'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}', 'dict/*.txt'],
         runtimeCaching: [],
       },
     }),

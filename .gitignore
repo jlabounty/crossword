@@ -12,8 +12,8 @@ dist
 dist-ssr
 *.local
 
-# Word list source (large, not needed in repo — only the compiled .dawg)
-scripts/words/*.txt
+# Word list (large, downloaded at build time via npm run build:dict)
+public/dict/enable1.txt
 
 # Editor directories and files
 .vscode/*
