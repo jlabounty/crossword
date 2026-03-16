@@ -32,6 +32,7 @@ interface GameActions {
   // Setup
   startGame: (config: GameConfig, players: Omit<Player, 'rack' | 'score' | 'consecutiveScorelessTurns'>[]) => void;
   resetToSetup: () => void;
+  loadGame: (snapshot: GameState) => void;
 
   // Placement
   placeTile: (tile: Tile, position: Position) => void;
@@ -338,6 +339,23 @@ export const useGameStore = create<GameState & GameActions>()(
             state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
             state.turnNumber += 1;
           }
+        });
+      },
+
+      loadGame(snapshot: GameState) {
+        set(state => {
+          state.phase = snapshot.phase;
+          state.turnPhase = snapshot.turnPhase === 'validating' ? 'placing' : snapshot.turnPhase;
+          state.board = snapshot.board;
+          state.players = snapshot.players;
+          state.currentPlayerIndex = snapshot.currentPlayerIndex;
+          state.tileBag = snapshot.tileBag;
+          state.pendingPlacements = snapshot.pendingPlacements ?? [];
+          state.lastMove = snapshot.lastMove ?? null;
+          state.consecutiveScorelessTurns = snapshot.consecutiveScorelessTurns ?? 0;
+          state.config = snapshot.config;
+          state.turnNumber = snapshot.turnNumber ?? 1;
+          state.swapSelection = snapshot.swapSelection ?? [];
         });
       },
     })),

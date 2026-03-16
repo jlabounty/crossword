@@ -3,6 +3,7 @@ import { useGameStore } from '@/store/gameStore';
 import { BOARD_PRESETS } from '@/constants/boardLayouts';
 import { DEFAULT_CONFIG } from '@/constants/gameConfig';
 import type { GameConfig, BotDifficulty, PlayerType } from '@/types';
+import { loadGameFromFile } from '@/utils/saveLoad';
 
 const CUSTOM_PRESET_IDX = BOARD_PRESETS.length; // sentinel index for "Custom"
 
@@ -18,6 +19,20 @@ interface PlayerSetup {
 
 export function MenuScreen() {
   const startGame = useGameStore(s => s.startGame);
+  const loadGame = useGameStore(s => s.loadGame);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const handleLoadFile = () => {
+    setLoadError(null);
+    loadGameFromFile()
+      .then(snapshot => loadGame(snapshot))
+      .catch(err => {
+        if ((err as Error).message !== 'No file selected') {
+          setLoadError((err as Error).message);
+          setTimeout(() => setLoadError(null), 3000);
+        }
+      });
+  };
 
   const [playerCount, setPlayerCount] = useState(2);
   const [preset, setPreset] = useState(0);
@@ -201,6 +216,18 @@ export function MenuScreen() {
         >
           Start Game
         </button>
+
+        <div className="relative">
+          <button
+            onClick={handleLoadFile}
+            className="w-full py-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-xl font-medium text-sm transition-colors"
+          >
+            📂 Load Saved Game
+          </button>
+          {loadError && (
+            <p className="text-red-400 text-xs text-center mt-1">{loadError}</p>
+          )}
+        </div>
       </div>
     </div>
   );

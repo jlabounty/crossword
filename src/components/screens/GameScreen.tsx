@@ -6,13 +6,32 @@ import { ActionBar } from '../Controls/ActionBar';
 import { BlankTileModal } from '../shared/BlankTileModal';
 import { useGameStore, useUIStore } from '@/store/gameStore';
 import { useGameLoop } from '@/hooks/useGameLoop';
+import { saveGameToFile, loadGameFromFile } from '@/utils/saveLoad';
+import type { GameState } from '@/types';
 
 export function GameScreen() {
   useGameLoop(); // Triggers bot turns automatically
   const resetToSetup = useGameStore(s => s.resetToSetup);
+  const loadGame = useGameStore(s => s.loadGame);
+  const gameState = useGameStore(s => s as GameState);
   const error = useUIStore(s => s.error);
   const setError = useUIStore(s => s.setError);
   const showSwapModal = useUIStore(s => s.showSwapModal);
+
+  const handleSave = () => {
+    saveGameToFile(gameState);
+  };
+
+  const handleLoad = () => {
+    loadGameFromFile()
+      .then(snapshot => loadGame(snapshot))
+      .catch(err => {
+        if ((err as Error).message !== 'No file selected') {
+          setError((err as Error).message);
+          setTimeout(() => setError(null), 3000);
+        }
+      });
+  };
 
   // Listen for game errors
   useEffect(() => {
@@ -40,7 +59,22 @@ export function GameScreen() {
           ← Menu
         </button>
         <span className="text-white/80 font-semibold text-sm">Word Board</span>
-        <div className="w-16" />
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            title="Save game to file"
+            className="text-white/60 hover:text-white text-sm transition-colors"
+          >
+            💾 Save
+          </button>
+          <button
+            onClick={handleLoad}
+            title="Load game from file"
+            className="text-white/60 hover:text-white text-sm transition-colors"
+          >
+            📂 Load
+          </button>
+        </div>
       </div>
 
       {/* Error toast */}
