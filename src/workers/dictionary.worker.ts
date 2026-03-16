@@ -353,9 +353,11 @@ function generateHorizontalMoves(
   const crossChecks = computeCrossChecksHorizontal(board);
   const mutableRack: MutableRack = { tiles: [...rack] };
 
+  let anchorCount = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (!isAnchor(board, r, c, isFirstMove)) continue;
+      anchorCount++;
 
       if (c > 0 && board[r][c - 1].tile !== null) {
         // Existing tiles immediately to the left — build the left part from the board
@@ -378,10 +380,13 @@ function generateHorizontalMoves(
           // Don't count past another anchor (prevents duplicate work)
           if (k > 0 && isAnchor(board, r, k, isFirstMove)) break;
         }
+        console.log('[bot] anchor', r, c, '| leftLimit:', leftLimit, '| moves before:', moves.length);
         leftPart('', r, c, 0, leftLimit, trie, [], mutableRack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+        console.log('[bot] anchor', r, c, '| moves after:', moves.length);
       }
     }
   }
+  console.log('[bot] generateHorizontalMoves done | anchors:', anchorCount, '| moves:', moves.length);
 }
 
 // ─── Main bot function ────────────────────────────────────────────────────────
@@ -397,14 +402,18 @@ function findBestMove(
   const moves: BotMove[] = [];
   const seen = new Set<string>();
 
+  console.log('[bot] findBestMove start — trie loaded:', !!trie, '| isFirstMove:', isFirstMove, '| rack:', rack.map(t => t.isBlank ? '?' : t.letter).join(''));
+
   // Horizontal moves
   generateHorizontalMoves(board, rack, isFirstMove, rackSize, bingoBonus, moves, seen);
+  console.log('[bot] horizontal moves found:', moves.length);
 
   // Vertical moves: transpose board, run horizontal algorithm, un-transpose
   const tBoard = transposeBoard(board);
   const vMoves: BotMove[] = [];
   const vSeen = new Set<string>();
   generateHorizontalMoves(tBoard, rack, isFirstMove, rackSize, bingoBonus, vMoves, vSeen);
+  console.log('[bot] vertical moves found:', vMoves.length);
 
   // Un-transpose placements (swap row/col)
   for (const m of vMoves) {
