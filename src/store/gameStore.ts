@@ -284,10 +284,19 @@ export const useGameStore = create<GameState & GameActions>()(
       },
 
       applyBotMove(placements: PendingPlacement[], score: number, wordsFormed: string[]) {
+        const { board, turnNumber } = get();
+        const isFirstMove = turnNumber === 1 && board.every(row => row.every(c => c.tile === null));
+        const structResult = validatePlacement(placements, board, isFirstMove);
+        if (!structResult.valid) {
+          // Bot generated a structurally invalid move — pass instead
+          get().passTurn();
+          return;
+        }
+
         set(state => {
           const player = state.players[state.currentPlayerIndex];
 
-          // Commit tiles directly (bot moves are pre-validated)
+          // Commit tiles
           for (const { tile, position } of placements) {
             const cell = state.board[position.row][position.col];
             cell.tile = tile;
