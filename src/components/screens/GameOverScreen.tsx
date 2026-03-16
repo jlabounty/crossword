@@ -1,11 +1,50 @@
+import { useState, useCallback } from 'react';
 import { useGameStore } from '@/store/gameStore';
+import {
+  renderBoardToCanvas,
+  canNativeShare,
+  downloadCanvasPng,
+  copyCanvasToClipboard,
+  shareCanvasPng,
+} from '@/utils/captureBoard';
 
 export function GameOverScreen() {
   const players = useGameStore(s => s.players);
+  const board   = useGameStore(s => s.board);
   const resetToSetup = useGameStore(s => s.resetToSetup);
+
+  const [copied, setCopied] = useState(false);
+  const [working, setWorking] = useState(false);
 
   const sorted = [...players].sort((a, b) => b.score - a.score);
   const winner = sorted[0];
+
+  const buildCanvas = useCallback(() =>
+    renderBoardToCanvas(board, sorted), [board, sorted]);
+
+  const handleShare = async () => {
+    setWorking(true);
+    const canvas = buildCanvas();
+    const title  = `${winner.name} wins Word Board!`;
+    const text   = sorted.map((p, i) => `${i + 1}. ${p.name}: ${p.score}`).join('  ');
+    const shared = canNativeShare() && await shareCanvasPng(canvas, title, text);
+    if (!shared) downloadCanvasPng(canvas, `wordboard-${winner.name}.png`);
+    setWorking(false);
+  };
+
+  const handleCopy = async () => {
+    setWorking(true);
+    const canvas = buildCanvas();
+    const ok = await copyCanvasToClipboard(canvas);
+    setWorking(false);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      // Clipboard API unavailable — fall back to download
+      downloadCanvasPng(canvas, `wordboard-${winner.name}.png`);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 p-6">
@@ -32,6 +71,26 @@ export function GameOverScreen() {
             <span className="text-white font-bold tabular-nums text-lg">{player.score}</span>
           </div>
         ))}
+      </div>
+
+      {/* Share / copy row */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleShare}
+          disabled={working}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50
+            text-white rounded-xl font-semibold text-sm transition-colors shadow"
+        >
+          {canNativeShare() ? '📤 Share' : '⬇️ Save Image'}
+        </button>
+        <button
+          onClick={handleCopy}
+          disabled={working}
+          className="flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 disabled:opacity-50
+            text-white rounded-xl font-semibold text-sm transition-colors shadow"
+        >
+          {copied ? '✅ Copied!' : '📋 Copy Image'}
+        </button>
       </div>
 
       <button
