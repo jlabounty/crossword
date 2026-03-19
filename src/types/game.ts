@@ -38,6 +38,10 @@ export interface GameConfig {
   difficulty: BotDifficulty;
   boardSeed: number;
   randomBonuses: boolean;
+  /** Award +5/+10/+15 bonus pts after 3/5/7 consecutive scoring turns. */
+  streakBonus: boolean;
+  /** Randomly assign golden/cursed/volatile power-ups to ~15% of tiles. */
+  powerUpTiles: boolean;
 }
 
 export interface GameState {

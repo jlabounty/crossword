@@ -39,6 +39,8 @@ export function MenuScreen() {
   const [customRows, setCustomRows] = useState(15);
   const [customCols, setCustomCols] = useState(15);
   const [randomBonuses, setRandomBonuses] = useState(false);
+  const [streakBonus, setStreakBonus] = useState(DEFAULT_CONFIG.streakBonus ?? true);
+  const [powerUpTiles, setPowerUpTiles] = useState(DEFAULT_CONFIG.powerUpTiles ?? true);
   const [players, setPlayers] = useState<PlayerSetup[]>([
     { id: '1', name: 'Player 1', type: 'human', difficulty: null },
     { id: '2', name: 'Player 2', type: 'human', difficulty: null },
@@ -62,6 +64,8 @@ export function MenuScreen() {
       rows,
       cols,
       randomBonuses,
+      streakBonus,
+      powerUpTiles,
       boardSeed: Math.floor(Math.random() * 0xffffffff),
     };
     startGame(config, players.slice(0, playerCount).map(p => ({
@@ -152,6 +156,46 @@ export function MenuScreen() {
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
                   ${randomBonuses ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
+
+          {/* Power-up tiles toggle */}
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <span className="text-white/80 text-sm font-medium">Power-up Tiles</span>
+              <span className="text-white/40 text-xs ml-2">★ golden · ✦ cursed · ⚡ volatile</span>
+            </div>
+            <button
+              onClick={() => setPowerUpTiles(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${powerUpTiles ? 'bg-green-600' : 'bg-white/20'}`}
+              role="switch"
+              aria-checked={powerUpTiles}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                  ${powerUpTiles ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
+
+          {/* Streak bonus toggle */}
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <span className="text-white/80 text-sm font-medium">Streak Bonus</span>
+              <span className="text-white/40 text-xs ml-2">+5/+10/+15 after 3/5/7 scoring turns</span>
+            </div>
+            <button
+              onClick={() => setStreakBonus(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${streakBonus ? 'bg-green-600' : 'bg-white/20'}`}
+              role="switch"
+              aria-checked={streakBonus}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                  ${streakBonus ? 'translate-x-6' : 'translate-x-1'}`}
               />
             </button>
           </div>

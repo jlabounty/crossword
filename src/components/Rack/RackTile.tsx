@@ -1,4 +1,5 @@
 import type { Tile } from '@/types';
+import { POWER_UP_LABELS, POWER_UP_TITLES } from '@/types';
 import { useUIStore } from '@/store/gameStore';
 
 interface Props {
@@ -40,8 +41,22 @@ export function RackTile({ tile, disabled, isSwapSelected, onSwapToggle }: Props
       `}
       style={{ aspectRatio: '1', minWidth: '2rem' }}
       onClick={handleClick}
-      title={tile.isBlank ? 'Blank tile (choose a letter when placed)' : `${tile.letter} = ${tile.value} pts`}
+      title={
+        tile.isBlank
+          ? 'Blank tile (choose a letter when placed)'
+          : tile.powerUp
+          ? `${tile.letter} = ${tile.value} pts · ${POWER_UP_TITLES[tile.powerUp]}`
+          : `${tile.letter} = ${tile.value} pts`
+      }
     >
+      {tile.powerUp && (
+        <span
+          className={`absolute top-[1px] left-[2px] text-[0.3em] leading-none z-10
+            ${tile.powerUp === 'golden' ? 'text-yellow-400' : tile.powerUp === 'cursed' ? 'text-purple-400' : 'text-sky-400'}`}
+        >
+          {POWER_UP_LABELS[tile.powerUp]}
+        </span>
+      )}
       <span className="text-[0.85em] leading-none">
         {tile.letter === '_' ? ' ' : tile.letter}
       </span>

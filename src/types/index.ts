@@ -1,6 +1,7 @@
 export type { BonusType } from './bonus';
 export { BONUS_LABELS, BONUS_COLORS } from './bonus';
-export type { Letter, Tile } from './tile';
+export type { Letter, TilePowerUp, Tile } from './tile';
+export { POWER_UP_LABELS, POWER_UP_TITLES } from './tile';
 export type { Position, Cell, Board, Direction } from './board';
 export type { PlayerType, BotDifficulty, Player } from './player';
 export type {

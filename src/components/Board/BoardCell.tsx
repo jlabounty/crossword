@@ -1,5 +1,5 @@
 import type { Cell, Tile } from '@/types';
-import { BONUS_LABELS, BONUS_COLORS } from '@/types';
+import { BONUS_LABELS, BONUS_COLORS, POWER_UP_LABELS, POWER_UP_TITLES } from '@/types';
 import { useGameStore, useUIStore } from '@/store/gameStore';
 import { useCallback } from 'react';
 
@@ -110,6 +110,7 @@ function TileDisplay({
         ${isPending && isPlaying ? 'ring-2 ring-yellow-400 cursor-pointer' : ''}
         ${tile.isBlank && isPending && !tile.playedAs ? 'ring-2 ring-red-400 animate-pulse' : ''}
       `}
+      title={tile.powerUp ? POWER_UP_TITLES[tile.powerUp] : undefined}
       onClick={e => {
         if (isPending && tile.isBlank && !tile.playedAs) {
           e.stopPropagation();
@@ -117,6 +118,14 @@ function TileDisplay({
         }
       }}
     >
+      {tile.powerUp && (
+        <span
+          className={`absolute top-[1px] left-[2px] text-[0.3em] leading-none z-10
+            ${tile.powerUp === 'golden' ? 'text-yellow-400' : tile.powerUp === 'cursed' ? 'text-purple-400' : 'text-sky-400'}`}
+        >
+          {POWER_UP_LABELS[tile.powerUp]}
+        </span>
+      )}
       <span className="text-[0.8em] leading-none">{displayLetter}</span>
       {!tile.isBlank && (
         <span className="text-[0.35em] leading-none opacity-75 absolute bottom-[2px] right-[3px]">

@@ -11,4 +11,6 @@ export interface Player {
   rack: Tile[];
   score: number;
   consecutiveScorelessTurns: number;
+  /** Number of consecutive turns where this player scored > 0. Resets on pass/swap/0-score. */
+  scoringStreak: number;
 }

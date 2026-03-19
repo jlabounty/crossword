@@ -29,7 +29,8 @@ function pickState(s: GameState) {
 
 const VALID_PHASES   = new Set<string>(['setup', 'playing', 'gameOver']);
 const VALID_TURN_PHASES = new Set<string>(['placing', 'validating', 'animating', 'botThinking']);
-const VALID_BONUSES  = new Set<string | null>(['DL', 'TL', 'DW', 'TW', 'START', null]);
+const VALID_BONUSES    = new Set<string | null>(['DL', 'TL', 'DW', 'TW', 'START', null]);
+const VALID_POWER_UPS  = new Set<string>(['golden', 'cursed', 'volatile']);
 const VALID_LETTERS  = new Set<string>('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
 
 const MAX_PLAYERS    = 4;
@@ -62,6 +63,10 @@ function validateTile(t: unknown, idx: string): void {
     if (typeof tile.playedAs !== 'string' || !VALID_LETTERS.has(tile.playedAs))
       err(`tile ${idx}: invalid playedAs`);
   }
+  if (tile.powerUp !== undefined && tile.powerUp !== null) {
+    if (typeof tile.powerUp !== 'string' || !VALID_POWER_UPS.has(tile.powerUp))
+      err(`tile ${idx}: invalid powerUp`);
+  }
 }
 
 function validateSnapshot(raw: unknown): GameState {
@@ -81,6 +86,9 @@ function validateSnapshot(raw: unknown): GameState {
   if (!isInt(cfg.bingoBonus, 0, 1000)) err('config.bingoBonus invalid');
   if (typeof cfg.boardSeed !== 'number') err('config.boardSeed invalid');
   if (typeof cfg.randomBonuses !== 'boolean') err('config.randomBonuses invalid');
+  // streakBonus and powerUpTiles are optional (old saves won't have them)
+  if (cfg.streakBonus !== undefined && typeof cfg.streakBonus !== 'boolean') err('config.streakBonus invalid');
+  if (cfg.powerUpTiles !== undefined && typeof cfg.powerUpTiles !== 'boolean') err('config.powerUpTiles invalid');
 
   const rows = cfg.rows as number;
   const cols = cfg.cols as number;
@@ -113,6 +121,7 @@ function validateSnapshot(raw: unknown): GameState {
     (s.players[i] as Record<string, unknown>).name = (p.name as string).slice(0, MAX_NAME_LEN);
     if (p.type !== 'human' && p.type !== 'bot') err(`players[${i}].type invalid`);
     if (typeof p.score !== 'number' || !isFinite(p.score)) err(`players[${i}].score invalid`);
+    if (p.scoringStreak !== undefined && !isInt(p.scoringStreak, 0, 10000)) err(`players[${i}].scoringStreak invalid`);
     if (!Array.isArray(p.rack)) err(`players[${i}].rack invalid`);
     if (p.rack.length > MAX_RACK_SIZE) err(`players[${i}].rack too large`);
     for (let j = 0; j < p.rack.length; j++) validateTile(p.rack[j], `players[${i}].rack[${j}]`);
