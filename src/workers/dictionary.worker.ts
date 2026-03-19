@@ -223,12 +223,17 @@ function extendRight(
   rackSize: number,
   bingoBonus: number,
   moves: BotMove[],
-  seen: Set<string>
+  seen: Set<string>,
+  // minPlacements: the word is only recorded when rawPlacements has at least this many
+  // tiles. Callers set this to rawPlacements.length+1 to guarantee at least one new
+  // tile is placed at or to the right of the anchor (prevents left-part-only words from
+  // being recorded as valid moves, which would later fail validatePlacement).
+  minPlacements: number = 1
 ) {
   const cols = board[0].length;
 
   if (c >= cols) {
-    if (node.w && rawPlacements.length > 0) {
+    if (node.w && rawPlacements.length >= minPlacements) {
       recordMove(rawPlacements, board, rackSize, bingoBonus, moves, seen);
     }
     return;
@@ -241,11 +246,11 @@ function extendRight(
     const letter = effectiveLetter(cell.tile);
     const next = node.c.get(letter);
     if (next) {
-      extendRight(r, c + 1, next, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+      extendRight(r, c + 1, next, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen, minPlacements);
     }
   } else {
     // Empty cell — optionally stop or place a tile
-    if (node.w && rawPlacements.length > 0) {
+    if (node.w && rawPlacements.length >= minPlacements) {
       recordMove(rawPlacements, board, rackSize, bingoBonus, moves, seen);
     }
 
@@ -259,7 +264,7 @@ function extendRight(
       if (tileIdx !== -1) {
         const [tile] = rack.tiles.splice(tileIdx, 1);
         rawPlacements.push({ r, c, tile });
-        extendRight(r, c + 1, next, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+        extendRight(r, c + 1, next, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen, minPlacements);
         rawPlacements.pop();
         rack.tiles.splice(tileIdx, 0, tile);
       }
@@ -270,7 +275,7 @@ function extendRight(
         const [blank] = rack.tiles.splice(blankIdx, 1);
         const usedBlank: Tile = { ...blank, playedAs: letter as Tile['letter'] };
         rawPlacements.push({ r, c, tile: usedBlank });
-        extendRight(r, c + 1, next, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+        extendRight(r, c + 1, next, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen, minPlacements);
         rawPlacements.pop();
         rack.tiles.splice(blankIdx, 0, blank);
       }
@@ -294,8 +299,11 @@ function leftPart(
   moves: BotMove[],
   seen: Set<string>
 ) {
-  // Try extending right from the anchor with the current left part
-  extendRight(r, anchorC, node, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen);
+  // Try extending right from the anchor with the current left part.
+  // Require at least one NEW tile placed at/right of the anchor so we never
+  // record a move that consists only of left-part tiles (which would not cover
+  // the anchor and would be rejected by validatePlacement).
+  extendRight(r, anchorC, node, rawPlacements, rack, board, crossChecks, rackSize, bingoBonus, moves, seen, rawPlacements.length + 1);
 
   if (limit === 0) return;
 
@@ -353,11 +361,9 @@ function generateHorizontalMoves(
   const crossChecks = computeCrossChecksHorizontal(board);
   const mutableRack: MutableRack = { tiles: [...rack] };
 
-  let anchorCount = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (!isAnchor(board, r, c, isFirstMove)) continue;
-      anchorCount++;
 
       if (c > 0 && board[r][c - 1].tile !== null) {
         // Existing tiles immediately to the left — build the left part from the board
@@ -380,13 +386,10 @@ function generateHorizontalMoves(
           // Don't count past another anchor (prevents duplicate work)
           if (k > 0 && isAnchor(board, r, k, isFirstMove)) break;
         }
-        console.log('[bot] anchor', r, c, '| leftLimit:', leftLimit, '| moves before:', moves.length);
         leftPart('', r, c, 0, leftLimit, trie, [], mutableRack, board, crossChecks, rackSize, bingoBonus, moves, seen);
-        console.log('[bot] anchor', r, c, '| moves after:', moves.length);
       }
     }
   }
-  console.log('[bot] generateHorizontalMoves done | anchors:', anchorCount, '| moves:', moves.length);
 }
 
 // ─── Main bot function ────────────────────────────────────────────────────────
@@ -402,18 +405,14 @@ function findBestMove(
   const moves: BotMove[] = [];
   const seen = new Set<string>();
 
-  console.log('[bot] findBestMove start — trie loaded:', !!trie, '| isFirstMove:', isFirstMove, '| rack:', rack.map(t => t.isBlank ? '?' : t.letter).join(''));
-
   // Horizontal moves
   generateHorizontalMoves(board, rack, isFirstMove, rackSize, bingoBonus, moves, seen);
-  console.log('[bot] horizontal moves found:', moves.length);
 
   // Vertical moves: transpose board, run horizontal algorithm, un-transpose
   const tBoard = transposeBoard(board);
   const vMoves: BotMove[] = [];
   const vSeen = new Set<string>();
   generateHorizontalMoves(tBoard, rack, isFirstMove, rackSize, bingoBonus, vMoves, vSeen);
-  console.log('[bot] vertical moves found:', vMoves.length);
 
   // Un-transpose placements (swap row/col)
   for (const m of vMoves) {
