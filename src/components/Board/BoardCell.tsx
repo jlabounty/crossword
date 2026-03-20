@@ -1,4 +1,4 @@
-import type { Cell, Tile } from '@/types';
+import type { Cell, Tile, TilePowerUp } from '@/types';
 import { BONUS_LABELS, BONUS_COLORS, POWER_UP_LABELS, POWER_UP_TITLES } from '@/types';
 import { useGameStore, useUIStore } from '@/store/gameStore';
 import { useCallback } from 'react';
@@ -89,6 +89,19 @@ export function BoardCell({ cell }: Props) {
   );
 }
 
+// Power-up backgrounds for board tiles (slightly muted so the board stays readable)
+const BOARD_POWER_UP_BG: Record<TilePowerUp, string> = {
+  golden:   'bg-amber-300 text-amber-900',
+  cursed:   'bg-purple-900 text-purple-100',
+  volatile: 'bg-sky-700 text-white',
+};
+
+const BOARD_POWER_UP_ICON: Record<TilePowerUp, string> = {
+  golden:   'text-amber-700',
+  cursed:   'text-purple-300',
+  volatile: 'text-sky-200',
+};
+
 function TileDisplay({
   tile,
   isPending,
@@ -101,16 +114,19 @@ function TileDisplay({
   onAssignBlank: () => void;
 }) {
   const displayLetter = tile.isBlank ? (tile.playedAs ?? '?') : tile.letter;
+  const pu = tile.powerUp;
+  const baseBg = pu ? BOARD_POWER_UP_BG[pu] : 'bg-tile-bg text-tile-text';
 
   return (
     <div
       className={`
         absolute inset-[2px] rounded-sm flex flex-col items-center justify-center
-        bg-tile-bg text-tile-text font-bold shadow-sm
+        font-bold shadow-sm
+        ${baseBg}
         ${isPending && isPlaying ? 'ring-2 ring-yellow-400 cursor-pointer' : ''}
         ${tile.isBlank && isPending && !tile.playedAs ? 'ring-2 ring-red-400 animate-pulse' : ''}
       `}
-      title={tile.powerUp ? POWER_UP_TITLES[tile.powerUp] : undefined}
+      title={pu ? POWER_UP_TITLES[pu] : undefined}
       onClick={e => {
         if (isPending && tile.isBlank && !tile.playedAs) {
           e.stopPropagation();
@@ -118,12 +134,9 @@ function TileDisplay({
         }
       }}
     >
-      {tile.powerUp && (
-        <span
-          className={`absolute top-[1px] left-[2px] text-[0.3em] leading-none z-10
-            ${tile.powerUp === 'golden' ? 'text-yellow-400' : tile.powerUp === 'cursed' ? 'text-purple-400' : 'text-sky-400'}`}
-        >
-          {POWER_UP_LABELS[tile.powerUp]}
+      {pu && (
+        <span className={`absolute top-[1px] left-[2px] text-[0.3em] leading-none z-10 ${BOARD_POWER_UP_ICON[pu]}`}>
+          {POWER_UP_LABELS[pu]}
         </span>
       )}
       <span className="text-[0.8em] leading-none">{displayLetter}</span>

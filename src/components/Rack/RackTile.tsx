@@ -1,4 +1,4 @@
-import type { Tile } from '@/types';
+import type { Tile, TilePowerUp } from '@/types';
 import { POWER_UP_LABELS, POWER_UP_TITLES } from '@/types';
 import { useUIStore } from '@/store/gameStore';
 
@@ -9,11 +9,33 @@ interface Props {
   onSwapToggle?: () => void;
 }
 
+// Base background/text per power-up (normal state)
+const POWER_UP_BG: Record<TilePowerUp, string> = {
+  golden:   'bg-amber-300 text-amber-900',
+  cursed:   'bg-purple-900 text-purple-100',
+  volatile: 'bg-sky-700 text-white',
+};
+
+// Background/text when the tile is selected (lifted)
+const POWER_UP_BG_SELECTED: Record<TilePowerUp, string> = {
+  golden:   'bg-amber-200 text-amber-900',
+  cursed:   'bg-purple-700 text-purple-100',
+  volatile: 'bg-sky-500 text-white',
+};
+
+// Icon color overrides (sits on top of coloured bg, so white usually reads best)
+const POWER_UP_ICON_COLOR: Record<TilePowerUp, string> = {
+  golden:   'text-amber-700',
+  cursed:   'text-purple-300',
+  volatile: 'text-sky-200',
+};
+
 export function RackTile({ tile, disabled, isSwapSelected, onSwapToggle }: Props) {
   const selectedTileId = useUIStore(s => s.selectedTileId);
   const setSelectedTile = useUIStore(s => s.setSelectedTile);
 
   const isSelected = selectedTileId === tile.id;
+  const pu = tile.powerUp;
 
   const handleClick = () => {
     if (disabled) return;
@@ -24,18 +46,22 @@ export function RackTile({ tile, disabled, isSwapSelected, onSwapToggle }: Props
     setSelectedTile(isSelected ? null : tile.id);
   };
 
+  const bgClass = isSwapSelected
+    ? 'bg-orange-400 text-white'
+    : pu
+    ? (isSelected ? `${POWER_UP_BG_SELECTED[pu]} scale-110 shadow-lg ring-2 ring-white` : `${POWER_UP_BG[pu]} hover:brightness-110 hover:scale-105`)
+    : isSelected
+    ? 'bg-tile-selected text-tile-text scale-110 shadow-lg ring-2 ring-white'
+    : 'bg-tile-bg text-tile-text hover:bg-tile-hover hover:scale-105';
+
   return (
     <div
       className={`
         relative flex flex-col items-center justify-center
         rounded-sm cursor-pointer select-none font-bold
         transition-all duration-100
-        ${isSelected
-          ? 'bg-tile-selected text-tile-text scale-110 shadow-lg ring-2 ring-white'
-          : isSwapSelected
-          ? 'bg-orange-400 text-white scale-105 ring-2 ring-orange-200'
-          : 'bg-tile-bg text-tile-text hover:bg-tile-hover hover:scale-105'
-        }
+        ${bgClass}
+        ${isSwapSelected ? 'scale-105 ring-2 ring-orange-200' : ''}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         shadow-md
       `}
@@ -44,17 +70,14 @@ export function RackTile({ tile, disabled, isSwapSelected, onSwapToggle }: Props
       title={
         tile.isBlank
           ? 'Blank tile (choose a letter when placed)'
-          : tile.powerUp
-          ? `${tile.letter} = ${tile.value} pts · ${POWER_UP_TITLES[tile.powerUp]}`
+          : pu
+          ? `${tile.letter} = ${tile.value} pts · ${POWER_UP_TITLES[pu]}`
           : `${tile.letter} = ${tile.value} pts`
       }
     >
-      {tile.powerUp && (
-        <span
-          className={`absolute top-[1px] left-[2px] text-[0.3em] leading-none z-10
-            ${tile.powerUp === 'golden' ? 'text-yellow-400' : tile.powerUp === 'cursed' ? 'text-purple-400' : 'text-sky-400'}`}
-        >
-          {POWER_UP_LABELS[tile.powerUp]}
+      {pu && (
+        <span className={`absolute top-[1px] left-[2px] text-[0.3em] leading-none z-10 ${POWER_UP_ICON_COLOR[pu]}`}>
+          {POWER_UP_LABELS[pu]}
         </span>
       )}
       <span className="text-[0.85em] leading-none">
