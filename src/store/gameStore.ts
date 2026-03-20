@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 import { persist } from 'zustand/middleware';
 import { v4 as uuid } from 'uuid';
 import type { GameState, GameConfig, Player, Position, Tile, PendingPlacement } from '@/types';
-import { DEFAULT_CONFIG, streakBonusAmount } from '@/constants/gameConfig';
+import { DEFAULT_CONFIG, streakBonusAmount, ascendingBonusAmount } from '@/constants/gameConfig';
 import { createBoard } from '@/engine/boardGenerator';
 import { initBag, drawTiles, swapTiles } from '@/engine/tileBag';
 import { validatePlacement } from '@/engine/placement';
@@ -30,7 +30,7 @@ function makeInitialState(): GameState {
 
 interface GameActions {
   // Setup
-  startGame: (config: GameConfig, players: Omit<Player, 'rack' | 'score' | 'consecutiveScorelessTurns' | 'scoringStreak'>[]) => void;
+  startGame: (config: GameConfig, players: Omit<Player, 'rack' | 'score' | 'consecutiveScorelessTurns' | 'scoringStreak' | 'ascendingStreak' | 'lastWordScore'>[]) => void;
   resetToSetup: () => void;
   loadGame: (snapshot: GameState) => void;
 
@@ -72,6 +72,8 @@ export const useGameStore = create<GameState & GameActions>()(
             score: 0,
             consecutiveScorelessTurns: 0,
             scoringStreak: 0,
+            ascendingStreak: 0,
+            lastWordScore: 0,
           };
         });
 
@@ -169,7 +171,10 @@ export const useGameStore = create<GameState & GameActions>()(
         set(state => {
           const player = state.players[state.currentPlayerIndex];
           const newStreak = wordScore > 0 ? player.scoringStreak + 1 : 0;
-          const bonus = (state.config.streakBonus ?? true) ? streakBonusAmount(newStreak) : 0;
+          const newAscStreak = (wordScore > 0 && wordScore > player.lastWordScore) ? player.ascendingStreak + 1 : 0;
+          const bonus =
+            ((state.config.streakBonus ?? true) ? streakBonusAmount(newStreak) : 0) +
+            ((state.config.ascendingBonus ?? true) ? ascendingBonusAmount(newAscStreak) : 0);
           const score = wordScore + bonus;
 
           // Commit tiles
@@ -180,9 +185,11 @@ export const useGameStore = create<GameState & GameActions>()(
             cell.bonusConsumed = true;
           }
 
-          // Update score and streak
+          // Update score and streaks
           player.score += score;
           player.scoringStreak = newStreak;
+          player.ascendingStreak = newAscStreak;
+          player.lastWordScore = wordScore;
           player.consecutiveScorelessTurns = wordScore > 0 ? 0 : player.consecutiveScorelessTurns + 1;
 
           // Draw tiles
@@ -231,6 +238,8 @@ export const useGameStore = create<GameState & GameActions>()(
           state.pendingPlacements = [];
 
           player.scoringStreak = 0;
+          player.ascendingStreak = 0;
+          player.lastWordScore = 0;
           player.consecutiveScorelessTurns += 1;
           state.consecutiveScorelessTurns += 1;
 
@@ -268,6 +277,8 @@ export const useGameStore = create<GameState & GameActions>()(
           state.swapSelection = [];
 
           player.scoringStreak = 0;
+          player.ascendingStreak = 0;
+          player.lastWordScore = 0;
           player.consecutiveScorelessTurns += 1;
           state.consecutiveScorelessTurns += 1;
           state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
@@ -316,11 +327,16 @@ export const useGameStore = create<GameState & GameActions>()(
           }
 
           const newStreak = score > 0 ? player.scoringStreak + 1 : 0;
-          const bonus = (state.config.streakBonus ?? true) ? streakBonusAmount(newStreak) : 0;
+          const newAscStreak = (score > 0 && score > player.lastWordScore) ? player.ascendingStreak + 1 : 0;
+          const bonus =
+            ((state.config.streakBonus ?? true) ? streakBonusAmount(newStreak) : 0) +
+            ((state.config.ascendingBonus ?? true) ? ascendingBonusAmount(newAscStreak) : 0);
           const totalScore = score + bonus;
 
           player.score += totalScore;
           player.scoringStreak = newStreak;
+          player.ascendingStreak = newAscStreak;
+          player.lastWordScore = score;
           player.consecutiveScorelessTurns = score > 0 ? 0 : player.consecutiveScorelessTurns + 1;
 
           // Draw tiles
@@ -359,7 +375,12 @@ export const useGameStore = create<GameState & GameActions>()(
           state.phase = snapshot.phase;
           state.turnPhase = snapshot.turnPhase === 'validating' ? 'placing' : snapshot.turnPhase;
           state.board = snapshot.board;
-          state.players = snapshot.players.map(p => ({ ...p, scoringStreak: p.scoringStreak ?? 0 }));
+          state.players = snapshot.players.map(p => ({
+            ...p,
+            scoringStreak: p.scoringStreak ?? 0,
+            ascendingStreak: p.ascendingStreak ?? 0,
+            lastWordScore: p.lastWordScore ?? 0,
+          }));
           state.currentPlayerIndex = snapshot.currentPlayerIndex;
           state.tileBag = snapshot.tileBag;
           state.pendingPlacements = snapshot.pendingPlacements ?? [];

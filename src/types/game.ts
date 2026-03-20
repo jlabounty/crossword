@@ -42,6 +42,8 @@ export interface GameConfig {
   streakBonus: boolean;
   /** Randomly assign golden/cursed/volatile power-ups to ~15% of tiles. */
   powerUpTiles: boolean;
+  /** Award an escalating bonus for each turn whose word score beats the previous turn's word score. */
+  ascendingBonus: boolean;
 }
 
 export interface GameState {

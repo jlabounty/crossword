@@ -89,6 +89,7 @@ function validateSnapshot(raw: unknown): GameState {
   // streakBonus and powerUpTiles are optional (old saves won't have them)
   if (cfg.streakBonus !== undefined && typeof cfg.streakBonus !== 'boolean') err('config.streakBonus invalid');
   if (cfg.powerUpTiles !== undefined && typeof cfg.powerUpTiles !== 'boolean') err('config.powerUpTiles invalid');
+  if (cfg.ascendingBonus !== undefined && typeof cfg.ascendingBonus !== 'boolean') err('config.ascendingBonus invalid');
 
   const rows = cfg.rows as number;
   const cols = cfg.cols as number;
@@ -122,6 +123,8 @@ function validateSnapshot(raw: unknown): GameState {
     if (p.type !== 'human' && p.type !== 'bot') err(`players[${i}].type invalid`);
     if (typeof p.score !== 'number' || !isFinite(p.score)) err(`players[${i}].score invalid`);
     if (p.scoringStreak !== undefined && !isInt(p.scoringStreak, 0, 10000)) err(`players[${i}].scoringStreak invalid`);
+    if (p.ascendingStreak !== undefined && !isInt(p.ascendingStreak, 0, 10000)) err(`players[${i}].ascendingStreak invalid`);
+    if (p.lastWordScore !== undefined && (typeof p.lastWordScore !== 'number' || !isFinite(p.lastWordScore as number))) err(`players[${i}].lastWordScore invalid`);
     if (!Array.isArray(p.rack)) err(`players[${i}].rack invalid`);
     if (p.rack.length > MAX_RACK_SIZE) err(`players[${i}].rack too large`);
     for (let j = 0; j < p.rack.length; j++) validateTile(p.rack[j], `players[${i}].rack[${j}]`);

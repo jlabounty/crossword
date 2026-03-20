@@ -13,4 +13,8 @@ export interface Player {
   consecutiveScorelessTurns: number;
   /** Number of consecutive turns where this player scored > 0. Resets on pass/swap/0-score. */
   scoringStreak: number;
+  /** Number of consecutive turns where word score strictly exceeded the previous turn's word score. */
+  ascendingStreak: number;
+  /** Raw word score from the last turn played (before streak bonuses). Used to evaluate ascending streak. */
+  lastWordScore: number;
 }

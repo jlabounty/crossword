@@ -41,6 +41,7 @@ export function MenuScreen() {
   const [randomBonuses, setRandomBonuses] = useState(false);
   const [streakBonus, setStreakBonus] = useState(DEFAULT_CONFIG.streakBonus ?? true);
   const [powerUpTiles, setPowerUpTiles] = useState(DEFAULT_CONFIG.powerUpTiles ?? true);
+  const [ascendingBonus, setAscendingBonus] = useState(DEFAULT_CONFIG.ascendingBonus ?? true);
   const [players, setPlayers] = useState<PlayerSetup[]>([
     { id: '1', name: 'Player 1', type: 'human', difficulty: null },
     { id: '2', name: 'Player 2', type: 'human', difficulty: null },
@@ -66,6 +67,7 @@ export function MenuScreen() {
       randomBonuses,
       streakBonus,
       powerUpTiles,
+      ascendingBonus,
       boardSeed: Math.floor(Math.random() * 0xffffffff),
     };
     startGame(config, players.slice(0, playerCount).map(p => ({
@@ -196,6 +198,26 @@ export function MenuScreen() {
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
                   ${streakBonus ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
+
+          {/* Ascending bonus toggle */}
+          <div className="flex items-center justify-between mt-3">
+            <div>
+              <span className="text-white/80 text-sm font-medium">Ascending Bonus</span>
+              <span className="text-white/40 text-xs ml-2">+3/+6/+10/+15 for beating your last score</span>
+            </div>
+            <button
+              onClick={() => setAscendingBonus(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${ascendingBonus ? 'bg-green-600' : 'bg-white/20'}`}
+              role="switch"
+              aria-checked={ascendingBonus}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                  ${ascendingBonus ? 'translate-x-6' : 'translate-x-1'}`}
               />
             </button>
           </div>

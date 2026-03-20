@@ -7,12 +7,18 @@ function streakLabel(streak: number): string | null {
   return null;
 }
 
+function ascLabel(streak: number): string | null {
+  if (streak >= 2) return `↑${streak}`;
+  return null;
+}
+
 export function Scoreboard() {
   const players = useGameStore(s => s.players);
   const currentPlayerIndex = useGameStore(s => s.currentPlayerIndex);
   const tileBag = useGameStore(s => s.tileBag);
   const turnNumber = useGameStore(s => s.turnNumber);
   const streakBonusEnabled = useGameStore(s => s.config.streakBonus);
+  const ascendingBonusEnabled = useGameStore(s => s.config.ascendingBonus);
 
   return (
     <div className="flex flex-col gap-1 min-w-[120px]">
@@ -21,6 +27,7 @@ export function Scoreboard() {
       </div>
       {players.map((player, i) => {
         const flame = streakBonusEnabled ? streakLabel(player.scoringStreak ?? 0) : null;
+        const asc = ascendingBonusEnabled ? ascLabel(player.ascendingStreak ?? 0) : null;
         return (
           <div
             key={player.id}
@@ -42,8 +49,16 @@ export function Scoreboard() {
                 )}
               </span>
               {flame && (
-                <span className="text-xs shrink-0" title={`${player.scoringStreak}-turn scoring streak`}>
+                <span className="text-xs shrink-0" title={`${player.scoringStreak}-turn scoring streak (+${[5,5,10,15][[3,5,7].findIndex(t => (player.scoringStreak ?? 0) >= t)] ?? 5} bonus)`}>
                   {flame}
+                </span>
+              )}
+              {asc && (
+                <span
+                  className="text-xs shrink-0 font-mono text-green-400"
+                  title={`Ascending ${player.ascendingStreak}-turn streak — each turn scored higher than the last`}
+                >
+                  {asc}
                 </span>
               )}
             </div>
